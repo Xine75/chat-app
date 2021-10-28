@@ -24,7 +24,8 @@ const EditableInput = ({initialValue,
     const onSaveClick = async() => {
         const trimmed = input.trim();
         if (trimmed === ""){
-            Alert.info(emptyMsg, 4000)
+            Alert.info(emptyMsg, 4000);
+            return;
         }
         if (trimmed !== initialValue){
             await onSave(trimmed)
