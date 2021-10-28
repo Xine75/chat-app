@@ -1,13 +1,10 @@
 import React, {useState, useRef} from 'react'
 import AvatarEditor from 'react-avatar-editor';
-import { Alert, Button, Modal } from 'rsuite';
-import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
-import { ref as dbRef, update} from "firebase/database";
+import { Alert, Button, Modal } from 'rsuite'
 import { useProfile } from '../../context/profile.context';
 import { useModalState } from '../../misc/custom-hooks'
 import { storage, database } from '../../misc/firebase';
-import ProfileAvatar from './ProfileAvatar';
-import { getUserUpdates } from "../../misc/helpers"
+import ProfileAvatar from '../ProfileAvatar';
 
 const fileInputTypes = ".png, .jpeg, .jpg";
 
@@ -58,26 +55,17 @@ const AvatarUploadBtn = () => {
         const canvas = avatarEditorRef.current.getImageScaledToCanvas();
         setIsLoading(true);
         try {
-           
             const blob = await getBlob(canvas);
-            const avatarFileRef = storageRef(
-                storage, `/profile/${profile.uid}/avatar`);
+            const avatarFileRef = storage.ref(`/profile/${profile.uid}`).child("avatar");
+            const uploadAvatarResult = await avatarFileRef.put( blob, {
+                cacheControl: `public, max-age=${3600 * 24 * 3}` //max age of 3 days specified in seconds
+            });
 
-                await uploadBytes(avatarFileRef, blob, {
-                    cacheControl: `public, max-age=${3600 * 24 * 3}` //max age of 3 days specified in seconds
-            });                
+            const downloadUrl = await uploadAvatarResult.ref.getDownloadURL();
 
-            const downloadUrl = await getDownloadURL(avatarEditorRef);
+            const userAvatarRef = database.ref(`/profiles/${profile.uid}`).child("avatar");
 
-            const updates = await getUserUpdates(
-                profile.uid,
-                "avatar",
-                downloadUrl,
-                database
-            );
-
-            await updates(dbRef(database), updates);
-
+            await userAvatarRef.set(downloadUrl);
             setIsLoading(false);
             Alert.info("Avatar has been uploaded", 4000);
 
@@ -89,7 +77,7 @@ const AvatarUploadBtn = () => {
 
     return (
         <div className="mt-3 text-center" >
-            <ProfileAvatar src={profile.avatar} name={profile.name} className="width-200 height-200 img-fullsize font-huge" />
+            <ProfileAvatar src={profile.avatar} name={profile.name} className="height-200 width-200 img-fullsize font-huge "/>
             <div>
                 <label 
                 htmlFor="avatar-upload" 

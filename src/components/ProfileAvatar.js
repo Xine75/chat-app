@@ -1,6 +1,6 @@
 import React from 'react';
 import { Avatar } from "rsuite";
-import { getNameInitials } from '../../misc/helpers';
+import { getNameInitials } from '../misc/helpers';
 
 const ProfileAvatar = ({ name, ...avatarProps }) => {
     return (
@@ -10,4 +10,4 @@ const ProfileAvatar = ({ name, ...avatarProps }) => {
     )
 }
 
-export default ProfileAvatar
+export default ProfileAvatar;
