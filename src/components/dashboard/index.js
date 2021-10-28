@@ -1,10 +1,33 @@
 import React from 'react'
+import { Profiler } from 'react/cjs/react.production.min'
+import { Drawer, Button } from 'rsuite'
+import { useProfile } from '../../context/profile.context'
 
-const Dashboard = () => {
+const Dashboard = ({onSignOut}) => {
+
+    const { profile } = useProfile();
+
+
     return (
-        <div>
+        
+        <>
+        <Drawer.Header>
+            <Drawer.Title>
             Dashboard
-        </div>
+            </Drawer.Title>
+        </Drawer.Header>
+
+        <Drawer.Body>
+        <h3>
+            Hey, {profile.name}
+        </h3>
+        </Drawer.Body>
+        <Drawer.Footer>
+        <Button block color="red" onClick={onSignOut}>
+            Sign Out
+        </Button>
+        </Drawer.Footer>
+        </>
     )
 }
 
