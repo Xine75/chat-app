@@ -1,18 +1,36 @@
-import React, {useState} from 'react'
+import React, {useState, useRef} from 'react'
 import AvatarEditor from 'react-avatar-editor';
 import { Alert, Button, Modal } from 'rsuite'
+import { useProfile } from '../../context/profile.context';
 import { useModalState } from '../../misc/custom-hooks'
+import { storage, database } from '../../misc/firebase';
 
 const fileInputTypes = ".png, .jpeg, .jpg";
 
 const acceptedFileTypes = ["image/png", "image/jpeg", "image/jpg"];
 
-const isValidFile = (file) => acceptedFileTypes.includes(file.type)
+const isValidFile = (file) => acceptedFileTypes.includes(file.type);
+
+//.getBlob only works on Callback functions, not promises, so this function converts it to a promise function
+const getBlob = (canvas) => {
+    return new Promise( (resolve, reject) => {
+        canvas.toBlob( (blob) => {
+            if(blob){
+                resolve(blob);
+            } else {
+                reject(new Error("File process error"))
+            }
+        });
+    });
+};
 
 const AvatarUploadBtn = () => {
 
     const { isOpen, open, close } = useModalState();
-    const [image, setImage] = useState(null)
+    const [image, setImage] = useState(null);
+    const avatarEditorRef = useRef();
+    const {profile} = useProfile();
+    const [isLoading, setIsLoading] = useState(false);
 
     const onFileInputChange = (ev) => {
         const currFiles = ev.target.files;
@@ -30,6 +48,32 @@ const AvatarUploadBtn = () => {
             }
         }
     };
+
+    const onUploadClick = async () => {
+
+        const canvas = avatarEditorRef.current.getImageScaledToCanvas();
+
+        try {
+            setIsLoading(true);
+            const blob = await getBlob(canvas);
+            const avatarFileRef = storage.ref(`/profile/${profile.uid}/avatar`);
+            const uploadAvatarResult = await avatarFileRef.put( blob, {
+                cacheControl: `public, max-age=${3600 * 24 * 3}` //max age of 3 days specified in seconds
+            });
+
+            const downloadUrl = await uploadAvatarResult.ref.getDownloadURL()
+
+            const userAvatarRef = database.ref(`/profile/${profile.uid}/avatar`);
+
+            userAvatarRef.set(downloadUrl);
+            setIsLoading(false);
+            Alert.info("Avatar has been uploaded", 4000);
+
+        } catch (err) {
+            setIsLoading(false);
+            Alert.error(err.message, 4000)
+        }
+    }
 
     return (
         <div className="mt-3 text-center" >
@@ -55,6 +99,7 @@ const AvatarUploadBtn = () => {
                             <div className="d-flex justify-content-center align-items-center h-100">
                             {image && (
                         <AvatarEditor
+                            ref={avatarEditorRef}
                             image={image}
                             width={200}
                             height={200}
@@ -65,7 +110,7 @@ const AvatarUploadBtn = () => {
                             </div>
                         </Modal.Body>
                         <Modal.Footer>
-                            <Button block appearance="ghost">
+                            <Button block appearance="ghost" onClick={onUploadClick} disabled={isLoading}>
                                 Upload new avatar
                             </Button>
                         </Modal.Footer>
