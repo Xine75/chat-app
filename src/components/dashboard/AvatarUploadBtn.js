@@ -1,9 +1,13 @@
 import React, {useState, useRef} from 'react'
 import AvatarEditor from 'react-avatar-editor';
-import { Alert, Button, Modal } from 'rsuite'
+import { Alert, Button, Modal } from 'rsuite';
+import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
+import { ref as dbRef, update} from "firebase/database";
 import { useProfile } from '../../context/profile.context';
 import { useModalState } from '../../misc/custom-hooks'
 import { storage, database } from '../../misc/firebase';
+import ProfileAvatar from './ProfileAvatar';
+import { getUserUpdates } from "../../misc/helpers"
 
 const fileInputTypes = ".png, .jpeg, .jpg";
 
@@ -52,20 +56,28 @@ const AvatarUploadBtn = () => {
     const onUploadClick = async () => {
 
         const canvas = avatarEditorRef.current.getImageScaledToCanvas();
-
+        setIsLoading(true);
         try {
-            setIsLoading(true);
+           
             const blob = await getBlob(canvas);
-            const avatarFileRef = storage.ref(`/profile/${profile.uid}/avatar`);
-            const uploadAvatarResult = await avatarFileRef.put( blob, {
-                cacheControl: `public, max-age=${3600 * 24 * 3}` //max age of 3 days specified in seconds
-            });
+            const avatarFileRef = storageRef(
+                storage, `/profile/${profile.uid}/avatar`);
 
-            const downloadUrl = await uploadAvatarResult.ref.getDownloadURL()
+                await uploadBytes(avatarFileRef, blob, {
+                    cacheControl: `public, max-age=${3600 * 24 * 3}` //max age of 3 days specified in seconds
+            });                
 
-            const userAvatarRef = database.ref(`/profile/${profile.uid}/avatar`);
+            const downloadUrl = await getDownloadURL(avatarEditorRef);
 
-            userAvatarRef.set(downloadUrl);
+            const updates = await getUserUpdates(
+                profile.uid,
+                "avatar",
+                downloadUrl,
+                database
+            );
+
+            await updates(dbRef(database), updates);
+
             setIsLoading(false);
             Alert.info("Avatar has been uploaded", 4000);
 
@@ -77,6 +89,7 @@ const AvatarUploadBtn = () => {
 
     return (
         <div className="mt-3 text-center" >
+            <ProfileAvatar src={profile.avatar} name={profile.name} className="width-200 height-200 img-fullsize font-huge" />
             <div>
                 <label 
                 htmlFor="avatar-upload" 
