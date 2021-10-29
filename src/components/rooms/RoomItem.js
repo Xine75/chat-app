@@ -1,4 +1,5 @@
-import React from 'react'
+import React from 'react';
+import TimeAgo from 'timeago-react';
 
 const RoomItem = () => {
     return (
@@ -6,7 +7,9 @@ const RoomItem = () => {
 
             <div className="d-flex justify-content-between align-itmes-center">
                 <h3 className="text-disappear">Room Name</h3>
-                <span></span>
+                <TimeAgo
+                    datetime={new Date()}
+                    className="font-normal text-black-45"/>
 
             </div>
             
