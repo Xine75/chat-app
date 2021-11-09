@@ -1,5 +1,3 @@
-//import { ref, get, query, orderByChild, equalTo } from "firebase/database";
-
 
 export function getNameInitials(name) {
 
@@ -18,33 +16,34 @@ export function tranformToArrayWithId(snapVal) {
 }
 
 
-// export async function getUserUpdates(userId, keyToUpdate, value, db) {
-//     const updates = {};
+export async function getUserUpdates(userId, keyToUpdate, value, db) {
+    const updates = {};
   
-//     updates[`/profiles/${userId}/${keyToUpdate}`] = value;
+    updates[`/profiles/${userId}/${keyToUpdate}`] = value;
   
-//     const getMsgs = get(
-//       query(ref(db, '/messages'), orderByChild('author/uid'), equalTo(userId))
-//     );
+    const getMsgs = db
+        .ref("/messages")
+        .orderByChild("author/uid")
+        .equalTo(userId)
+        .once("value");
+   
   
-//     const getRooms = get(
-//       query(
-//         ref(db, '/rooms'),
-//         orderByChild('lastMessage/author/uid'),
-//         equalTo(userId)
-//       )
-//     );
-//     // Index not defined, add ".indexOn": "author/uid", for path "/messages", to the rules
+    const getRooms = db
+        .ref("/rooms")
+        .orderByChild("lastMessage/author/uid")
+        .equalTo(userId)
+        .once(value);
+    // Index not defined, add ".indexOn": "author/uid", for path "/messages", to the rules
   
-//     const [mSnap, rSnap] = await Promise.all([getMsgs, getRooms]);
+    const [mSnap, rSnap] = await Promise.all([getMsgs, getRooms]);
   
-//     mSnap.forEach(msgSnap => {
-//       updates[`/messages/${msgSnap.key}/author/${keyToUpdate}`] = value;
-//     });
+    mSnap.forEach(msgSnap => {
+      updates[`/messages/${msgSnap.key}/author/${keyToUpdate}`] = value;
+    });
   
-//     rSnap.forEach(roomSnap => {
-//       updates[`/rooms/${roomSnap.key}/lastMessage/author/${keyToUpdate}`] = value;
-//     });
+    rSnap.forEach(roomSnap => {
+      updates[`/rooms/${roomSnap.key}/lastMessage/author/${keyToUpdate}`] = value;
+    });
   
-//     return updates;
-//   }
+    return updates;
+  }
